@@ -1,0 +1,38 @@
+# Development Dockerfile для Runtime Service (Elixir)
+
+FROM elixir:1.15-alpine
+
+# Install build dependencies
+RUN apk add --no-cache \
+    build-base \
+    git \
+    curl
+
+# Install Hex and Rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Set work directory
+WORKDIR /app
+
+# Copy mix files
+COPY mix.exs mix.lock ./
+
+# Install dependencies
+RUN mix deps.get
+
+# Copy application code
+COPY . .
+
+# Compile application
+RUN mix compile
+
+# Expose ports
+EXPOSE 4000 4001
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:4001/health || exit 1
+
+# Start Phoenix server
+CMD ["mix", "phx.server"]

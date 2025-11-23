@@ -1,0 +1,157 @@
+# Action Routes Configuration
+#
+# Эта конфигурация определяет маршрутизацию действий игроков на соответствующие сервисы.
+#
+# ВАЖНО: Runtime читает этот файл при старте и перезагружает каждые 10 секунд в dev-режиме.
+# Добавление нового типа действия НЕ требует изменения кода Runtime!
+
+actions:
+  # ===== Movement =====
+  move:
+    service: movement-service
+    grpc_host: movement-service:50051
+    method: ValidateMove
+    timeout_ms: 100
+    description: "Движение игрока по карте"
+
+  # ===== Combat =====
+  attack:
+    service: combat-service
+    grpc_host: combat-service:50052
+    method: ValidateAttack
+    timeout_ms: 200
+    description: "Атака цели оружием ближнего/дальнего боя"
+
+  # ===== Magic =====
+  cast_spell:
+    service: spell-service
+    grpc_host: spell-service:50053
+    method: ValidateSpellCast
+    timeout_ms: 300
+    description: "Использование магического заклинания"
+
+  # ===== Items =====
+  use_item:
+    service: inventory-service
+    grpc_host: inventory-service:50054
+    method: ValidateItemUse
+    timeout_ms: 150
+    description: "Использование предмета из инвентаря"
+
+  drop_item:
+    service: inventory-service
+    grpc_host: inventory-service:50054
+    method: ValidateItemDrop
+    timeout_ms: 100
+    description: "Выбрасывание предмета на землю"
+
+  pickup_item:
+    service: inventory-service
+    grpc_host: inventory-service:50054
+    method: ValidateItemPickup
+    timeout_ms: 100
+    description: "Подбирание предмета с земли"
+
+  # ===== Interaction =====
+  interact:
+    service: interaction-service
+    grpc_host: interaction-service:50055
+    method: ValidateInteraction
+    timeout_ms: 200
+    description: "Взаимодействие с объектами (двери, рычаги, сундуки)"
+
+  start_dialogue:
+    service: dialogue-service
+    grpc_host: dialogue-service:50056
+    method: StartDialogue
+    timeout_ms: 150
+    description: "Начало диалога с NPC"
+
+  dialogue_choice:
+    service: dialogue-service
+    grpc_host: dialogue-service:50056
+    method: ProcessDialogueChoice
+    timeout_ms: 150
+    description: "Выбор варианта в диалоге"
+
+  # ===== Trading =====
+  trade_offer:
+    service: trading-service
+    grpc_host: trading-service:50057
+    method: ValidateTradeOffer
+    timeout_ms: 200
+    description: "Предложение обмена другому игроку"
+
+  trade_accept:
+    service: trading-service
+    grpc_host: trading-service:50057
+    method: AcceptTrade
+    timeout_ms: 200
+    description: "Принятие предложения обмена"
+
+  # ===== Crafting =====
+  craft_item:
+    service: crafting-service
+    grpc_host: crafting-service:50058
+    method: ValidateCrafting
+    timeout_ms: 300
+    description: "Создание предмета из ресурсов"
+
+# ===== Service Health Checks =====
+# Runtime периодически проверяет доступность сервисов
+
+health_checks:
+  enabled: true
+  interval_seconds: 30
+  timeout_ms: 5000
+
+  # Если сервис недоступен более N проверок подряд, Runtime:
+  # - Логирует ошибку
+  # - Отклоняет все действия этого типа с ошибкой "service_unavailable"
+  max_failures: 3
+
+# ===== Delegation Rules =====
+# Ограничения на глубину делегирования для защиты от циклов
+
+delegation:
+  max_depth: 5
+
+  # Логировать цепочки делегирования длиннее N
+  log_threshold: 3
+
+# ===== Development Mode =====
+# Настройки для локальной разработки
+
+development:
+  # Перезагружать конфигурацию автоматически
+  hot_reload: true
+  reload_interval_seconds: 10
+
+  # Подробное логирование всех вызовов
+  verbose_logging: true
+
+  # Использовать localhost вместо docker-сети
+  localhost_override:
+    enabled: true
+    services:
+      movement-service: "localhost:50051"
+      combat-service: "localhost:50052"
+      spell-service: "localhost:50053"
+      inventory-service: "localhost:50054"
+      interaction-service: "localhost:55055"
+      dialogue-service: "localhost:50056"
+      trading-service: "localhost:50057"
+      crafting-service: "localhost:50058"
+
+# ===== Production Mode =====
+# Настройки для production
+
+production:
+  hot_reload: false
+  verbose_logging: false
+
+  # Использовать service discovery через Consul/etcd
+  service_discovery:
+    enabled: true
+    provider: "consul"
+    consul_address: "consul:8500"
